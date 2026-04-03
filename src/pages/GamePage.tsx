@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import Podium from "@/components/Podium";
 import {
   getGameByCode, getPlayers, getEventLogs, logEvent,
-  getCurrentRound, isGameOver, getLocalPlayer, calculateScores,
+  getCurrentRound, isGameOver, getLocalPlayer, calculateScores, joinGame,
 } from "@/lib/gameService";
 
 const GamePage = () => {
@@ -18,6 +19,8 @@ const GamePage = () => {
   const [currentRound, setCurrentRound] = useState(1);
   const [gameOver, setGameOver] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [rejoinNickname, setRejoinNickname] = useState("");
+  const [rejoining, setRejoining] = useState(false);
 
   const loadData = async () => {
     if (!code) return;
@@ -59,6 +62,20 @@ const GamePage = () => {
     }
   };
 
+  const handleRejoin = async () => {
+    if (!rejoinNickname.trim() || !game) return;
+    setRejoining(true);
+    try {
+      const player = await joinGame(game.id, rejoinNickname.trim());
+      setLocalPlayer({ id: player.id, nickname: player.nickname });
+      toast.success("Kirjauduttu peliin!");
+      loadData();
+    } catch (e: any) {
+      toast.error(e.message || "Kirjautuminen epäonnistui");
+    }
+    setRejoining(false);
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
   }
@@ -86,6 +103,26 @@ const GamePage = () => {
 
       <div className="max-w-md mx-auto px-4">
         <Podium players={scores} />
+
+        {/* Rejoin prompt when no local session */}
+        {!localPlayer && !loading && (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="bg-card rounded-xl p-4 border border-border mb-6 space-y-3"
+          >
+            <p className="text-sm text-muted-foreground">Kirjaudu peliin syöttämällä nimimerkkisi. Jos olet jo pelaaja, pisteesi palautetaan.</p>
+            <Input
+              placeholder="Nimimerkkisi"
+              value={rejoinNickname}
+              onChange={(e) => setRejoinNickname(e.target.value)}
+              className="h-12 text-lg"
+            />
+            <Button size="lg" className="w-full h-12" onClick={handleRejoin} disabled={rejoining}>
+              {rejoining ? "Kirjaudutaan..." : "🎟️ Kirjaudu peliin"}
+            </Button>
+          </motion.div>
+        )}
 
         {/* Action buttons for local player */}
         {localPlayer && !gameOver && (

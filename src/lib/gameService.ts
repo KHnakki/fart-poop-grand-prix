@@ -32,13 +32,27 @@ export const getGameByCode = async (code: string) => {
 };
 
 export const joinGame = async (gameId: string, nickname: string) => {
+  // Try to find existing player with this nickname in the game (rejoin)
+  const { data: existing } = await supabase
+    .from("players")
+    .select("*")
+    .eq("game_id", gameId)
+    .eq("nickname", nickname)
+    .maybeSingle();
+
+  if (existing) {
+    // Rejoin: store session locally
+    localStorage.setItem(`player_${gameId}`, JSON.stringify({ id: existing.id, token: existing.session_token, nickname }));
+    return existing;
+  }
+
+  // New player
   const { data, error } = await supabase
     .from("players")
     .insert({ game_id: gameId, nickname })
     .select()
     .single();
   if (error) throw error;
-  // Store session token locally
   localStorage.setItem(`player_${gameId}`, JSON.stringify({ id: data.id, token: data.session_token, nickname }));
   return data;
 };
