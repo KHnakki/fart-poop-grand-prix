@@ -1,107 +1,111 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import Podium from "@/components/Podium";
-import AddPlayer from "@/components/AddPlayer";
-import PlayerCard from "@/components/PlayerCard";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { createGame, getGameByCode, joinGame } from "@/lib/gameService";
+import { toast } from "sonner";
 
-interface Player {
-  id: string;
-  name: string;
-  farts: number;
-  poops: number;
-}
-
-const GP_POINTS = [10, 5, 3, 1];
-const POOP_BONUS = 3;
-
-const calcPoints = (players: Player[]) => {
-  const sorted = [...players].sort((a, b) => {
-    const totalB = b.farts + b.poops;
-    const totalA = a.farts + a.poops;
-    return totalB - totalA;
-  });
-
-  return players.map((p) => {
-    const rank = sorted.findIndex((s) => s.id === p.id);
-    const gpPts = GP_POINTS[rank] ?? 0;
-    const poopBonus = p.poops * POOP_BONUS;
-    return { ...p, points: gpPts + poopBonus, rank: rank + 1 };
-  });
-};
+const TIMEZONES = [
+  "UTC", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
+  "Europe/London", "Europe/Berlin", "Europe/Helsinki", "Asia/Tokyo", "Asia/Shanghai",
+  "Australia/Sydney",
+];
 
 const Index = () => {
-  const [players, setPlayers] = useState<Player[]>([]);
+  const navigate = useNavigate();
+  const [mode, setMode] = useState<"home" | "create" | "join">("home");
+  const [joinCode, setJoinCode] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+  const [rounds, setRounds] = useState("1");
+  const [loading, setLoading] = useState(false);
 
-  const addPlayer = (name: string) => {
-    setPlayers((prev) => [
-      ...prev,
-      { id: crypto.randomUUID(), name, farts: 0, poops: 0 },
-    ]);
+  const handleCreate = async () => {
+    if (!nickname.trim()) { toast.error("Enter your nickname!"); return; }
+    setLoading(true);
+    try {
+      const game = await createGame(timezone, parseInt(rounds), new Date().toISOString().split("T")[0]);
+      await joinGame(game.id, nickname.trim());
+      navigate(`/game/${game.join_code}`);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to create game");
+    }
+    setLoading(false);
   };
 
-  const logFart = (id: string) => {
-    setPlayers((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, farts: p.farts + 1 } : p))
-    );
+  const handleJoin = async () => {
+    if (!joinCode.trim() || !nickname.trim()) { toast.error("Enter code and nickname!"); return; }
+    setLoading(true);
+    try {
+      const game = await getGameByCode(joinCode.trim());
+      if (!game) { toast.error("Game not found!"); setLoading(false); return; }
+      await joinGame(game.id, nickname.trim());
+      navigate(`/game/${game.join_code}`);
+    } catch (e: any) {
+      if (e.message?.includes("duplicate")) toast.error("Nickname already taken in this game!");
+      else toast.error(e.message || "Failed to join");
+    }
+    setLoading(false);
   };
-
-  const logPoop = (id: string) => {
-    setPlayers((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, poops: p.poops + 1 } : p))
-    );
-  };
-
-  const resetGame = () => setPlayers((prev) => prev.map((p) => ({ ...p, farts: 0, poops: 0 })));
-
-  const ranked = calcPoints(players).sort((a, b) => a.rank - b.rank);
 
   return (
-    <div className="min-h-screen bg-background pb-12">
-      <header className="text-center pt-8 pb-4 px-4">
-        <motion.h1
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="text-4xl md:text-5xl font-bold tracking-tight"
-        >
-          💨 Fart Grand Prix 🏆
-        </motion.h1>
-        <p className="text-muted-foreground mt-2 text-lg">
-          Log farts & poops. Best farter wins the podium!
-        </p>
-        <p className="text-sm text-muted-foreground mt-1">
-          🏁 GP Points: 1st=10, 2nd=5, 3rd=3, 4th=1 &nbsp;|&nbsp; 💩 Poop bonus: +{POOP_BONUS} pts each
-        </p>
-      </header>
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="text-center mb-8"
+      >
+        <h1 className="text-5xl font-bold mb-2">💨 Fart Grand Prix 🏆</h1>
+        <p className="text-muted-foreground text-lg">The ultimate family gas competition</p>
+      </motion.div>
 
-      <div className="max-w-md mx-auto px-4">
-        <Podium players={ranked.map((p) => ({ name: p.name, points: p.points }))} />
+      {mode === "home" && (
+        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="space-y-4 w-full max-w-xs">
+          <Button size="lg" className="w-full text-lg h-14" onClick={() => setMode("create")}>🏁 Create Game</Button>
+          <Button size="lg" variant="secondary" className="w-full text-lg h-14" onClick={() => setMode("join")}>🎟️ Join Game</Button>
+        </motion.div>
+      )}
 
-        <div className="mt-6 space-y-4">
-          <AddPlayer onAdd={addPlayer} />
+      {mode === "create" && (
+        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="space-y-4 w-full max-w-xs">
+          <Input placeholder="Your nickname" value={nickname} onChange={(e) => setNickname(e.target.value)} className="h-12 text-lg" />
+          <Select value={timezone} onValueChange={setTimezone}>
+            <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {TIMEZONES.map((tz) => <SelectItem key={tz} value={tz}>{tz.replace("_", " ")}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={rounds} onValueChange={setRounds}>
+            <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {[1, 2, 3, 5, 7].map((r) => <SelectItem key={r} value={String(r)}>{r} {r === 1 ? "Round (1 day)" : `Rounds (${r} days)`}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button size="lg" className="w-full h-14 text-lg" onClick={handleCreate} disabled={loading}>
+            {loading ? "Creating..." : "🚀 Start Game"}
+          </Button>
+          <Button variant="ghost" className="w-full" onClick={() => setMode("home")}>← Back</Button>
+        </motion.div>
+      )}
 
-          <AnimatePresence>
-            {ranked.map((p) => (
-              <PlayerCard
-                key={p.id}
-                name={p.name}
-                farts={p.farts}
-                poops={p.poops}
-                points={p.points}
-                rank={p.rank}
-                onFart={() => logFart(p.id)}
-                onPoop={() => logPoop(p.id)}
-              />
-            ))}
-          </AnimatePresence>
-
-          {players.length > 0 && (
-            <Button variant="ghost" className="w-full text-muted-foreground" onClick={resetGame}>
-              🔄 Reset Scores
-            </Button>
-          )}
-        </div>
-      </div>
+      {mode === "join" && (
+        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="space-y-4 w-full max-w-xs">
+          <Input placeholder="Your nickname" value={nickname} onChange={(e) => setNickname(e.target.value)} className="h-12 text-lg" />
+          <Input
+            placeholder="Game code (e.g. ABC123)"
+            value={joinCode}
+            onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+            maxLength={6}
+            className="h-12 text-lg text-center tracking-widest font-bold"
+          />
+          <Button size="lg" className="w-full h-14 text-lg" onClick={handleJoin} disabled={loading}>
+            {loading ? "Joining..." : "🎟️ Join Game"}
+          </Button>
+          <Button variant="ghost" className="w-full" onClick={() => setMode("home")}>← Back</Button>
+        </motion.div>
+      )}
     </div>
   );
 };
