@@ -62,6 +62,20 @@ const GamePage = () => {
     }
   };
 
+  const handleRejoin = async () => {
+    if (!rejoinNickname.trim() || !game) return;
+    setRejoining(true);
+    try {
+      const player = await joinGame(game.id, rejoinNickname.trim());
+      setLocalPlayer({ id: player.id, nickname: player.nickname });
+      toast.success("Kirjauduttu peliin!");
+      loadData();
+    } catch (e: any) {
+      toast.error(e.message || "Kirjautuminen epäonnistui");
+    }
+    setRejoining(false);
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
   }
