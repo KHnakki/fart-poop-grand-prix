@@ -12,8 +12,15 @@ export default {
         "2xl": "1400px",
       },
     },
+    fontFamily: {
+      fredoka: ['Fredoka', 'sans-serif'],
+    },
     extend: {
       colors: {
+        gold: "hsl(var(--gold))",
+        silver: "hsl(var(--silver))",
+        bronze: "hsl(var(--bronze))",
+        poop: "hsl(var(--poop))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
