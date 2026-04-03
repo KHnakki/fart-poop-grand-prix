@@ -104,6 +104,26 @@ const GamePage = () => {
       <div className="max-w-md mx-auto px-4">
         <Podium players={scores} />
 
+        {/* Rejoin prompt when no local session */}
+        {!localPlayer && !loading && (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="bg-card rounded-xl p-4 border border-border mb-6 space-y-3"
+          >
+            <p className="text-sm text-muted-foreground">Kirjaudu peliin syöttämällä nimimerkkisi. Jos olet jo pelaaja, pisteesi palautetaan.</p>
+            <Input
+              placeholder="Nimimerkkisi"
+              value={rejoinNickname}
+              onChange={(e) => setRejoinNickname(e.target.value)}
+              className="h-12 text-lg"
+            />
+            <Button size="lg" className="w-full h-12" onClick={handleRejoin} disabled={rejoining}>
+              {rejoining ? "Kirjaudutaan..." : "🎟️ Kirjaudu peliin"}
+            </Button>
+          </motion.div>
+        )}
+
         {/* Action buttons for local player */}
         {localPlayer && !gameOver && (
           <motion.div
