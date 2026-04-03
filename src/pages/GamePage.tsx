@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import Podium from "@/components/Podium";
 import {
   getGameByCode, getPlayers, getEventLogs, logEvent,
-  getCurrentRound, isGameOver, getLocalPlayer, calculateScores,
+  getCurrentRound, isGameOver, getLocalPlayer, calculateScores, joinGame,
 } from "@/lib/gameService";
 
 const GamePage = () => {
