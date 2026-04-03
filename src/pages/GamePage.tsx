@@ -19,6 +19,8 @@ const GamePage = () => {
   const [currentRound, setCurrentRound] = useState(1);
   const [gameOver, setGameOver] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [rejoinNickname, setRejoinNickname] = useState("");
+  const [rejoining, setRejoining] = useState(false);
 
   const loadData = async () => {
     if (!code) return;
