@@ -14,7 +14,107 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      event_logs: {
+        Row: {
+          created_at: string
+          event_type: string
+          game_id: string
+          id: string
+          player_id: string
+          round: number
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          game_id: string
+          id?: string
+          player_id: string
+          round?: number
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          game_id?: string
+          id?: string
+          player_id?: string
+          round?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_logs_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_logs_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      games: {
+        Row: {
+          created_at: string
+          id: string
+          join_code: string
+          start_date: string
+          timezone: string
+          total_rounds: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          join_code: string
+          start_date?: string
+          timezone?: string
+          total_rounds?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          join_code?: string
+          start_date?: string
+          timezone?: string
+          total_rounds?: number
+        }
+        Relationships: []
+      }
+      players: {
+        Row: {
+          created_at: string
+          game_id: string
+          id: string
+          nickname: string
+          session_token: string
+        }
+        Insert: {
+          created_at?: string
+          game_id: string
+          id?: string
+          nickname: string
+          session_token?: string
+        }
+        Update: {
+          created_at?: string
+          game_id?: string
+          id?: string
+          nickname?: string
+          session_token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "players_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
